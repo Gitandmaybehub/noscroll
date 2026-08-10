@@ -46,13 +46,22 @@ The engine is byte-identical on both platforms. Everything platform-specific sta
 
 ### The app
 
-First run is a narrative, not a checklist: how much you scroll → how old you are → **your life in
-weeks**, with every band and the percentage derived from your two answers (at 18, scrolling 4.8h
-of a 5h daily surplus, that is 96% of your remaining free time). Then the permissions, then out.
+**iOS.** First run is a narrative, not a checklist: how much you scroll → how old you are →
+**your life in weeks**, with every band and the percentage derived from your two answers (at 18,
+scrolling 4.8h of a 5h daily surplus, that is 96% of your remaining free time). Then the
+permissions, then out.
 
 Home is one service at a time, with today's usage, that service's switches, and a five-tab shell —
 Sleep, everything-blocked, Home, Shield, You. A WidgetKit extension puts the same services on your
 home screen, opening through NoScroll via `noscroll://open/<service>`.
+
+**Android does not have this UI yet.** There is no onboarding narrative, no five-tab shell, and no
+widget. What exists: the wrapper (Instagram and YouTube, with a button to switch between them) and
+the shield, plus a Status screen showing whether the accessibility permission is granted and which
+apps are shielded — reachable from a button in the wrapper, not a settings tab. Fresh installs
+shield Instagram and YouTube by default the same as iOS does. Building Android up to the same
+onboarding/shell UI iOS has is open work, not a bug — see the install guide, which should say so at
+the point a user would otherwise expect to see it.
 
 ### Rules are data
 
@@ -83,7 +92,11 @@ read that approval from a different place and will still print
 cd engine && pnpm install && pnpm test && pnpm build
 
 # Sync the built engine + rules into both app targets
-./tools/sync-engine.sh
+./tools/sync-engine.sh          # macOS / Linux / Git Bash
+npm run sync-engine             # any OS, incl. Windows PowerShell / cmd.exe — no bash needed
+# or directly:
+node tools/sync-engine.mjs      # same script npm run sync-engine calls
+tools/sync-engine.ps1           # native PowerShell equivalent (Windows)
 
 # iOS — pure logic tests on the host, then the app itself
 cd ios/NoScrollCore && swift test
@@ -163,6 +176,9 @@ Honestly, because a feature list that overpromises is the thing this project is 
   adding them as targets is blocked on the entitlement above, since they cannot run without it.
 - **Android rule-bundle signature verification is not implemented.** iOS verifies; Android
   currently reads bundles from assets/cache without checking the signature. Do not ship without it.
+- **Android has no onboarding, five-tab shell, or widget.** See "The app" above. It has the
+  wrapper, a two-service switch, shielding on by default, and a Status screen — not the iOS
+  experience. Building it out is open work.
 - **No notifications.** WKWebView cannot receive web push, and shielding an app suppresses that
   app's own notifications too. This is a scoped-out non-goal, not a bug.
 - **Screen Time is off by default even on a device.** The Family Controls entitlement is opt-in

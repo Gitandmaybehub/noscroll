@@ -23,7 +23,17 @@ object EngineInjector {
 
     private const val ENGINE_ASSET = "noscroll.js"
 
-    fun install(context: Context, webView: WebView, service: String) {
+    /**
+     * [wrapped] is taken explicitly rather than read back off
+     * `webView.webViewClient` — this is called again on every service switch
+     * (see MainActivity.switchService), and reading it back would capture the
+     * anonymous client this function itself installed on the previous call,
+     * not the real [WrappedWebViewClient]. That would have silently turned
+     * off network-layer media blocking and auth-path exclusion after the
+     * first switch, since `existing as? WrappedWebViewClient` would then
+     * always be null.
+     */
+    fun install(context: Context, webView: WebView, wrapped: WrappedWebViewClient, service: String) {
         val engine = context.assets.open(ENGINE_ASSET).bufferedReader().use { it.readText() }
         val bundle = loadBundle(context, service)
 
@@ -38,7 +48,6 @@ object EngineInjector {
             $engine
         """.trimIndent()
 
-        val existing = webView.webViewClient
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -48,12 +57,12 @@ object EngineInjector {
             override fun shouldInterceptRequest(
                 view: WebView?,
                 request: android.webkit.WebResourceRequest?,
-            ) = (existing as? WrappedWebViewClient)?.shouldInterceptRequest(view, request)
+            ) = wrapped.shouldInterceptRequest(view, request)
 
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: android.webkit.WebResourceRequest?,
-            ) = (existing as? WrappedWebViewClient)?.shouldOverrideUrlLoading(view, request) ?: false
+            ) = wrapped.shouldOverrideUrlLoading(view, request)
         }
     }
 

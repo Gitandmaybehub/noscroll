@@ -8,4 +8,16 @@
 
     <!-- Shown in Android's own accessibility settings screen. -->
     <string name="accessibility_description">NoScroll checks which app is in the foreground so it can show your shield screen when you open an app you have chosen to set aside. It cannot read the contents of any app, and never taps or acts inside one.</string>
+
+    <string name="status_button">Status</string>
+    <string name="switch_service_button">Switch to %1$s</string>
+    <string name="status_title">Blocking status</string>
+    <string name="status_enabled">Blocking is ON</string>
+    <string name="status_disabled">Blocking is OFF</string>
+    <string name="status_disabled_detail">NoScroll can\'t step in until its accessibility service is turned on in Android\'s settings. Nothing below will be enforced until you do this.</string>
+    <string name="status_open_settings">Open Accessibility Settings</string>
+    <string name="status_shielded_apps">Shielded apps</string>
+    <string name="status_service_instagram">Instagram</string>
+    <string name="status_service_youtube">YouTube</string>
+    <string name="status_rule_warning">Some rules haven\'t matched anything this session and may be out of date: %1$s</string>
 </resources>

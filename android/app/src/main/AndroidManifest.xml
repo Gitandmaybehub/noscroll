@@ -29,6 +29,11 @@
             android:noHistory="true"
             android:theme="@style/Theme.NoScroll.Shield" />
 
+        <activity
+            android:name=".shield.StatusActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NoScroll" />
+
         <!--
           Accessibility service: foreground-app detection ONLY.
           See ForegroundAppMonitor.kt for the Play policy note and

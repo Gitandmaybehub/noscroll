@@ -25,6 +25,31 @@ class ShieldSettings(context: Context) {
         prefs.edit { putStringSet(KEY_PACKAGES, packages) }
     }
 
+    /**
+     * "Nothing is forced on" (README) means the core targets arrive switched
+     * ON by default, same as every other block in this product — NOT that
+     * shielding starts empty until someone finds a settings screen that
+     * doesn't otherwise exist.
+     *
+     * Before this existed, `shieldedPackages()` had no way to become non-empty
+     * on a fresh install: nothing ever called `setShielded`, so
+     * `ForegroundAppMonitor.isShielded` was always false and the shield could
+     * never show, independent of whether the accessibility permission was
+     * granted. That is the root cause behind "I paired it, restarted my
+     * phone, nothing is blocked" reports — there was nothing to enable.
+     *
+     * Idempotent and safe to call on every launch: once a user has an opinion
+     * (including "shield nothing"), `KEY_INITIALIZED` is already set and this
+     * is a no-op, so it never overwrites a deliberate choice.
+     */
+    fun ensureDefaultsInitialized() {
+        if (prefs.getBoolean(KEY_INITIALIZED, false)) return
+        prefs.edit {
+            putStringSet(KEY_PACKAGES, DEFAULT_TARGETS)
+            putBoolean(KEY_INITIALIZED, true)
+        }
+    }
+
     // --------------------------------------------------------------- post mode
 
     /**
@@ -106,6 +131,7 @@ class ShieldSettings(context: Context) {
 
         private const val PREFS = "noscroll.shield"
         private const val KEY_PACKAGES = "shielded.packages"
+        private const val KEY_INITIALIZED = "shielded.packages.initialized"
         private const val KEY_UNLOCK_DAY = "unlock.day"
         private const val KEY_UNLOCK_COUNT = "unlock.count"
         private const val KEY_UPLOADING = "postmode.uploading"
