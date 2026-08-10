@@ -83,7 +83,11 @@ read that approval from a different place and will still print
 cd engine && pnpm install && pnpm test && pnpm build
 
 # Sync the built engine + rules into both app targets
-./tools/sync-engine.sh
+./tools/sync-engine.sh          # macOS / Linux / Git Bash
+npm run sync-engine             # any OS, incl. Windows PowerShell / cmd.exe — no bash needed
+# or directly:
+node tools/sync-engine.mjs      # same script npm run sync-engine calls
+tools/sync-engine.ps1           # native PowerShell equivalent (Windows)
 
 # iOS — pure logic tests on the host, then the app itself
 cd ios/NoScrollCore && swift test
