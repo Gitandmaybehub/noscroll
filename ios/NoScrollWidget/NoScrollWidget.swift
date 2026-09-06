@@ -8,7 +8,7 @@ import WidgetKit
 /// icons in that corner is what actually changes the behaviour — a blocker you
 /// have to remember to open is a blocker you stop opening.
 ///
-/// Each tile is a `Link` to `noscroll://open/<service>`, handled in RootView.
+/// Each tile is a `Link` to `noscrollcg://open/<service>`, handled in RootView.
 struct ServiceEntry: TimelineEntry {
     let date: Date
     let services: [WidgetService]
@@ -93,7 +93,7 @@ struct NoScrollWidgetView: View {
                         }
                     }
                 }
-                Label("NoScroll", systemImage: "square.grid.2x2.fill")
+                Label("NoScroll CG", systemImage: "square.grid.2x2.fill")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundStyle(.secondary)
             }
@@ -102,7 +102,7 @@ struct NoScrollWidgetView: View {
     }
 
     private func tile(_ service: WidgetService, size: CGFloat) -> some View {
-        Link(destination: URL(string: "noscroll://open/\(service.id)")!) {
+        Link(destination: URL(string: "noscrollcg://open/\(service.id)")!) {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                 .fill(LinearGradient(colors: [service.start, service.end],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -118,10 +118,10 @@ struct NoScrollWidgetView: View {
 
 struct NoScrollWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "app.noscroll.shortcuts", provider: Provider()) { entry in
+        StaticConfiguration(kind: "com.christiangiangrande.noscroll.shortcuts", provider: Provider()) { entry in
             NoScrollWidgetView(entry: entry)
         }
-        .configurationDisplayName("NoScroll shortcuts")
+        .configurationDisplayName("NoScroll CG shortcuts")
         .description("Open your apps through NoScroll, straight from the home screen.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }

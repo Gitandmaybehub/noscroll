@@ -24,14 +24,7 @@ struct ServiceSettingsView: View {
                     }
                 }
 
-                Section("Today") {
-                    LabeledContent("Time in \(service.name)", value: state.usageToday(for: service.id))
-                    if !state.hasScreenTimeAccess {
-                        Text("Usage needs Screen Time access, which is not granted yet.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+
             }
             .navigationTitle("\(service.name) Settings")
             .navigationBarTitleDisplayMode(.inline)

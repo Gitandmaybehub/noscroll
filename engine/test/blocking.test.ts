@@ -131,6 +131,22 @@ describe('YouTube', () => {
     expect(document.querySelector('.pivot-shorts')).toBeNull();
   });
 
+  it('removes the current mobile Shorts div while keeping the other tabs and the opt-out', () => {
+    const html = `<ytm-pivot-bar-renderer>
+      <ytm-pivot-bar-item-renderer><div role="tab" class="pivot-home">Home</div></ytm-pivot-bar-item-renderer>
+      <ytm-pivot-bar-item-renderer><div role="tab" class="pivot-bar-item-tab pivot-shorts" aria-selected="false">Shorts</div></ytm-pivot-bar-item-renderer>
+      <ytm-pivot-bar-item-renderer><div role="tab" class="pivot-you">You</div></ytm-pivot-bar-item-renderer>
+    </ytm-pivot-bar-renderer>`;
+    mount(html, 'https://m.youtube.com/');
+    run(yt);
+    expect(document.querySelector('.pivot-shorts')).toBeNull();
+    expect(document.querySelectorAll('ytm-pivot-bar-item-renderer')).toHaveLength(2);
+    stop();
+    mount(html, 'https://m.youtube.com/');
+    run(yt, { 'youtube.shorts-nav': false });
+    expect(document.querySelector('.pivot-shorts')).not.toBeNull();
+  });
+
   it('removes the Shorts shelf — the surface SocialLite visibly leaks', () => {
     run(yt);
     expect(document.getElementById('shorts-shelf-1')).toBeNull();

@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>NoScroll</string>
+	<string>NoScroll CG</string>
 
 	<!-- Widget taps arrive as noscroll://open/<service>. -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>app.noscroll</string>
+			<string>com.christiangiangrande.noscroll</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>noscroll</string>
+				<string>noscrollcg</string>
 			</array>
 		</dict>
 	</array>

@@ -65,7 +65,7 @@ final class AppState: ObservableObject {
 
     /// noscroll://open/<service> — the widget's whole job.
     func handle(url: URL) {
-        guard url.scheme == "noscroll", url.host == "open" else { return }
+        guard url.scheme == "noscrollcg", url.host == "open" else { return }
         let id = url.lastPathComponent
         guard Self.service(id) != nil else { return }
         tab = .home

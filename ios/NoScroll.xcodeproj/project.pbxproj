@@ -344,7 +344,7 @@
 				CODE_SIGN_ENTITLEMENTS = "$(NOSCROLL_ENTITLEMENTS)";
 				INFOPLIST_FILE = NoScroll/Info.plist;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.noscroll;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -360,7 +360,7 @@
 				INFOPLIST_FILE = NoScrollWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NoScroll;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.noscroll.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -395,7 +395,7 @@
 				CODE_SIGN_ENTITLEMENTS = "$(NOSCROLL_ENTITLEMENTS)";
 				INFOPLIST_FILE = NoScroll/Info.plist;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.noscroll;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -411,7 +411,7 @@
 				INFOPLIST_FILE = NoScrollWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NoScroll;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.noscroll.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

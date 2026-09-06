@@ -1,3 +1,29 @@
+# NoScroll CG
+
+Christian's personal iPhone edition of [NoScroll](https://github.com/Blueturboguy07/noscroll).
+Source: [Gitandmaybehub/noscroll](https://github.com/Gitandmaybehub/noscroll).
+Original authorship and AGPL-3.0-or-later license are preserved.
+
+This fork opens directly to the service list. Home, Blocks and About use native
+SwiftUI controls with text labels, Dynamic Type and system appearance. The Home
+screen shows the saved block settings for each service. No age or screen-time
+estimate is requested. Inactive Shield, Sleep, usage and telemetry controls are
+removed from the visible app. The YouTube rule now covers the current mobile Shorts tab, with a regression
+test for removal and opt-out. Rule bundles are signed with this fork's own key.
+The private key stays local; only the public key is included in the app. The
+login-page guard stays in place. This edition blocks only inside its browser; it does not lock other apps.
+
+The app identity is `com.christiangiangrande.noscroll`, with a separate widget
+identity and the `noscrollcg://open/instagram` URL scheme. Sign both targets with
+your own Apple team. A free personal-team build expires after seven days and needs
+to be signed and installed again. The original setup guide remains at
+[publik](https://publikhq.com/noscroll/fork?me=Gitandmaybehub&branch=mac-iphone).
+
+The upstream documentation below describes the original edition. Its onboarding,
+five-tab layout and optional Shield work are not part of this fork's visible UI.
+
+---
+
 # NoScroll
 
 ![NoScroll — the home screen, the setup screen, and Instagram with no Reels tab](docs/img/hero.jpg)

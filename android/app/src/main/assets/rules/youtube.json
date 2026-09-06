@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "minEngine": 1,
   "services": {
     "youtube": {
@@ -51,7 +51,8 @@
             "ytm-pivot-bar-item-renderer:has(div[aria-label='Shorts'])",
             "ytm-pivot-bar-item-renderer:has(a[href^='/shorts'])",
             "a.pivot-shorts",
-            "[role='tab'][aria-label='Shorts']"
+            "[role='tab'][aria-label='Shorts']",
+            "ytm-pivot-bar-item-renderer:has([role=\"tab\"].pivot-shorts)"
           ],
           "afterRemove": "rejustify",
           "observe": true,
@@ -137,5 +138,5 @@
       ]
     }
   },
-  "signature": "d5f+bjI4RICmS3demmGRgpJFWTflHQ5+2reAXSc9UyUFiXg+pDWaCdQIB0rn5XWtxS6CxtPBTXPZCn535VuEAA=="
+  "signature": "9cmm7Jg6jYiLSN9jyW9Vm0uXOOE+u3g0ErnkWUwpe5+vQod2/CDU5QrUgmNE6FF/ICUs4CcZQfWqhVKpvOEcAQ=="
 }
