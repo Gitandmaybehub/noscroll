@@ -13,6 +13,15 @@ test for removal and opt-out. Rule bundles are signed with this fork's own key.
 The private key stays local; only the public key is included in the app. The
 login-page guard stays in place. This edition blocks only inside its browser; it does not lock other apps.
 
+Personal signing renewal is handled by `tools/renew-ios.py`, using the local
+configuration in `~/Library/Application Support/NoScrollRenewal/config.json`.
+The Codex task checks every six hours and renews with 72 hours remaining.
+The Mac must be available and the paired iPhone reachable for installation.
+It verifies both signing profiles and a saved-data marker after installing in
+place. It never uninstalls the app. Device details and Apple credentials stay
+outside the repository. Run `python3 tools/renew-ios.py --self-test` to check
+the renewal guards without contacting Apple or the phone.
+
 The app identity is `com.christiangiangrande.noscroll`, with a separate widget
 identity and the `noscrollcg://open/instagram` URL scheme. Sign both targets with
 your own Apple team. A free personal-team build expires after seven days and needs
