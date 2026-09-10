@@ -30,6 +30,8 @@ const CORE_AUTH_PATTERNS: RegExp[] = [
   /^\/signin/i,
   /^\/logout/i,
   /^\/ServiceLogin/i,
+  // X's current sign-in flow (observed on the iPhone).
+  /^\/i\/jf\/onboarding(?:\/|$)/i,
   // Generic
   /^\/login/i,
   /^\/signup/i,

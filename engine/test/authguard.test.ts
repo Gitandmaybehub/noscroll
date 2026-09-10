@@ -40,6 +40,7 @@ const AUTH_ROUTES = [
   '/emailsignup/',
   '/signin',
   '/ServiceLogin?continue=x',
+  '/i/jf/onboarding/web?mode=login',
 ];
 
 describe('auth guard', () => {
@@ -117,13 +118,16 @@ describe('auth guard', () => {
     }
   });
 
-  it('engine is fully inert on an auth surface: no style, no observer', () => {
+  it.each([
+    ['instagram', 'https://www.instagram.com/accounts/login/'],
+    ['x', 'https://x.com/i/jf/onboarding/web?mode=login'],
+  ])('engine is fully inert on %s sign-in: no style, no observer', (service, url) => {
     const bundle: RuleBundle = {
       version: 1,
       minEngine: 1,
       services: {
-        instagram: {
-          match: ['*://*.instagram.com/*'],
+        [service]: {
+          match: [`*://*.${new URL(url).hostname.replace(/^www\./, '')}/*`],
           surfaces: {
             everything: {
               kind: 'dom-remove',
@@ -137,7 +141,7 @@ describe('auth guard', () => {
 
     document.body.innerHTML = '<div id="login-form"><input type="password" /></div>';
     // happy-dom lets us set the URL directly
-    window.happyDOM?.setURL?.('https://www.instagram.com/accounts/login/');
+    window.happyDOM?.setURL?.(url);
 
     const ok = start({ bundle, settings: {}, telemetry: false });
     expect(ok).toBe(true);

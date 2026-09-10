@@ -60,6 +60,30 @@ final class WrappedWebViewController: UIViewController {
                                               forMainFrameOnly: false))
         controller.add(BridgeHandler(onBridge), name: "noscroll")
 
+        if session.service == "snapchat" {
+            // Snapchat removes web sign-in entirely below its desktop breakpoint.
+            // Apply only to Snapchat's web client, leaving account forms responsive.
+            let desktopViewport = """
+            if (["snapchat.com", "www.snapchat.com", "web.snapchat.com"].includes(location.hostname)) {
+                const applyViewport = () => {
+                    let viewport = document.querySelector('meta[name="viewport"]');
+                    if (!viewport) {
+                        viewport = document.createElement('meta');
+                        viewport.name = 'viewport';
+                        document.head.appendChild(viewport);
+                    }
+                    if (viewport.content !== 'width=1024') viewport.content = 'width=1024';
+                };
+                applyViewport();
+                new MutationObserver(applyViewport).observe(document.head,
+                    {childList: true, subtree: true, attributes: true, attributeFilter: ['content']});
+            }
+            """
+            controller.addUserScript(WKUserScript(source: desktopViewport,
+                                                  injectionTime: .atDocumentEnd,
+                                                  forMainFrameOnly: true))
+        }
+
         let cfg = WKWebViewConfiguration()
         cfg.userContentController = controller
         cfg.websiteDataStore = dataStore
@@ -69,10 +93,22 @@ final class WrappedWebViewController: UIViewController {
         cfg.allowsInlineMediaPlayback = true
         cfg.mediaTypesRequiringUserActionForPlayback = []
 
-        // Apple 2.5.6: WKWebView only. We use the stock mobile user agent
-        // unmodified — a custom UA is a fingerprint that raises the rate of
-        // "suspicious login attempt" checkpoints against our users' accounts.
+        // Snapchat redirects mobile browsers to a desktop-only promotional
+        // page. Request its desktop site inside the same persistent WebKit store.
+        if session.service == "snapchat" {
+            cfg.defaultWebpagePreferences.preferredContentMode = .desktop
+        }
         webView = WKWebView(frame: .zero, configuration: cfg)
+        if session.service == "snapchat" {
+            let version = ProcessInfo.processInfo.operatingSystemVersion
+            webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(version.majorVersion).\(version.minorVersion) Safari/605.1.15"
+        }
+        if session.service == "x" {
+            // X sends the stock embedded UA to x-safari-https:// instead of a page.
+            // Identify the same WebKit engine as mobile Safari to stay in NoScroll.
+            let version = ProcessInfo.processInfo.operatingSystemVersion
+            webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(version.majorVersion)_\(version.minorVersion) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(version.majorVersion).\(version.minorVersion) Mobile/15E148 Safari/604.1"
+        }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
@@ -115,9 +151,19 @@ final class WrappedWebViewController: UIViewController {
     /// a real, reported SocialLite bug and it is the single worst one, because
     /// the user cannot get past it.
     private func restoreOrLoad() {
+        // Old builds saved even an empty history (observed for X on-device).
+        // Assigning that state succeeds but loads nothing, leaving a white page.
         if let state = restorationState ?? UserDefaults.standard.data(forKey: stateKey) {
             webView.interactionState = state
-            return
+            if let item = webView.backForwardList.currentItem,
+               ["http", "https"].contains(item.url.scheme?.lowercased() ?? ""),
+               // Discard Snapchat's old mobile "use your computer" landing page.
+               !(session.service == "snapchat"
+                 && ["www.snapchat.com", "snapchat.com"].contains(item.url.host ?? "")
+                 && (item.url.path.hasPrefix("/web") || item.url.path == "/")) {
+                webView.go(to: item)
+                return
+            }
         }
         webView.load(URLRequest(url: homeURL()))
     }
@@ -125,6 +171,7 @@ final class WrappedWebViewController: UIViewController {
     private var stateKey: String { "noscroll.state.\(session.id.uuidString)" }
 
     @objc private func saveState() {
+        guard webView.backForwardList.currentItem != nil else { return }
         if let state = webView.interactionState as? Data {
             restorationState = state
             UserDefaults.standard.set(state, forKey: stateKey)
@@ -194,8 +241,8 @@ extension WrappedWebViewController: WKUIDelegate {
                  for navigationAction: WKNavigationAction,
                  windowFeatures: WKWindowFeatures) -> WKWebView? {
         // target=_blank inside a wrapper should navigate in place, not vanish.
-        if let url = navigationAction.request.url, navigationAction.targetFrame == nil {
-            webView.load(URLRequest(url: url))
+        if navigationAction.request.url != nil, navigationAction.targetFrame == nil {
+            webView.load(navigationAction.request)
         }
         return nil
     }

@@ -44,6 +44,7 @@ struct WebScreen: View {
                 settings: state.settings,
                 onAuthSurface: { authSurfaceActive = $0 }
             )
+            .id(service.id)
         } else {
             ContentUnavailableView(
                 "Rules unavailable",
