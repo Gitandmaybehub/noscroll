@@ -86,12 +86,31 @@ public enum PopupPolicy {
     /// After a popup-style GSI completion the document is blank and JS calls
     /// `window.close()`. If that page landed in the *parent* (the old in-place
     /// load), bounce to X Home instead of sitting on white.
+    ///
+    /// `/gsi/issue` is the token page. It is also blank, and `window.close()`
+    /// often never reaches WKWebView on iOS, so the child overlay stays white.
     public static func isGoogleAuthCompletion(_ url: URL) -> Bool {
         guard isGoogleSSOHost(url.host) else { return false }
         let path = url.path.lowercased()
         return path.contains("/gsi/transform")
+            || path.contains("/gsi/issue")
             || path.contains("/o/oauth2/approval")
             || path.contains("/o/oauth2/postmessagerelay")
+    }
+
+    /// The child overlay is a full-screen white page when GSI finishes.
+    /// Close it. Do not close the account chooser or X's own login hop.
+    public static func shouldDismissPopup(_ url: URL?) -> Bool {
+        guard let url else { return false }
+        let scheme = url.scheme?.lowercased() ?? ""
+        if scheme.isEmpty || scheme == "about" { return false }
+        if isGoogleAuthCompletion(url) { return true }
+        if isXHost(url.host) {
+            if isAuthPath(url.path) { return false }
+            if isBlankXRoot(url) { return true }
+            if scheme == "http" || scheme == "https" { return true }
+        }
+        return false
     }
 
     public static func isAuthPath(_ path: String) -> Bool {
@@ -119,13 +138,137 @@ public enum PopupPolicy {
 
     /// Parent was left on Google / a blank X root after the popup closed.
     /// Reload Home so the user is not stranded on white.
-    public static func shouldLoadXHome(afterClosingPopup parentURL: URL?) -> Bool {
+    ///
+    /// When Google just finished, the parent is usually still
+    /// `/i/flow/login`. iOS 17.5+ nulls `window.opener` on the cross-site
+    /// hop, so X never leaves that page. Home is the recovery.
+    public static func shouldLoadXHome(afterClosingPopup parentURL: URL?,
+                                       googleAuthJustFinished: Bool = false) -> Bool {
+        if googleAuthJustFinished {
+            guard let url = parentURL else { return true }
+            if isXHost(url.host), !isBlankXRoot(url), !isAuthPath(url.path) {
+                return false
+            }
+            return true
+        }
         guard let url = parentURL else { return true }
         if isSSOPopupHost(url.host ?? "") { return true }
         if isGoogleAuthCompletion(url) { return true }
         if isBlankXRoot(url) { return true }
         return false
     }
+
+    /// Saved interaction state can reopen the white Google page or `x.com/`.
+    public static func shouldRestoreSavedURL(_ url: URL, serviceID: String) -> Bool {
+        let scheme = url.scheme?.lowercased() ?? ""
+        guard scheme == "http" || scheme == "https" else { return false }
+        if serviceID == "x" {
+            if isGoogleAuthCompletion(url) { return false }
+            if isSSOPopupHost(url.host ?? "") { return false }
+            if isBlankXRoot(url) { return false }
+        }
+        return true
+    }
+
+    /// Native payload from the popup opener shim.
+    public struct OpenerBridgeMessage: Equatable, Sendable {
+        public var isClose: Bool
+        public var origin: String
+        public var dataJSON: String?
+    }
+
+    public static func parseOpenerBridgeMessage(_ body: Any) -> OpenerBridgeMessage? {
+        guard let dict = body as? [String: Any] else { return nil }
+        let type = (dict["type"] as? String ?? "").lowercased()
+        let origin = dict["origin"] as? String ?? ""
+        if type == "close" { return OpenerBridgeMessage(isClose: true, origin: origin, dataJSON: nil) }
+        if type == "postmessage" || dict["data"] != nil {
+            guard let dataJSON = jsonString(dict["data"] ?? NSNull()) else { return nil }
+            return OpenerBridgeMessage(isClose: false, origin: origin, dataJSON: dataJSON)
+        }
+        return nil
+    }
+
+    /// Replay GSI's `postMessage` on the x.com page after iOS dropped opener.
+    public static func parentMessageEventScript(dataJSON: String, origin: String) -> String {
+        let originJSON = jsonString(origin) ?? "\"\""
+        return """
+        (function(){
+          var data = \(dataJSON);
+          var origin = \(originJSON);
+          var event = new MessageEvent('message', { data: data, origin: origin });
+          window.dispatchEvent(event);
+        })();
+        """
+    }
+
+    /// Runs at document start in the child window. Forwards `opener.postMessage`
+    /// to native when iOS 17.5+ has nulled `window.opener`.
+    public static let openerShimJavaScript = """
+    (function() {
+      if (window.__noscrollOpenerShim) return;
+      var href = String(location.href || '');
+      var host = String(location.hostname || '').toLowerCase();
+      var isBlank = href === 'about:blank' || href === 'about:blank/' || href === '';
+      var isGoogle = host === 'accounts.google.com' || host.indexOf('.accounts.google.com') !== -1
+        || host === 'accounts.youtube.com' || host.indexOf('.accounts.youtube.com') !== -1;
+      if (!isBlank && !isGoogle) return;
+      window.__noscrollOpenerShim = true;
+      function forward(data) {
+        try {
+          window.webkit.messageHandlers.noscrollOpener.postMessage({
+            type: 'postMessage',
+            origin: String(location.origin || ''),
+            data: data
+          });
+        } catch (e) {}
+      }
+      function closeNative() {
+        try {
+          window.webkit.messageHandlers.noscrollOpener.postMessage({
+            type: 'close',
+            origin: String(location.origin || '')
+          });
+        } catch (e) {}
+      }
+      var fake = {
+        closed: false,
+        postMessage: function(data) { forward(data); },
+        focus: function() {},
+        blur: function() {},
+        close: function() {}
+      };
+      var patched = false;
+      try {
+        if (window.opener && window.opener !== window && window.opener.postMessage) {
+          var real = window.opener.postMessage.bind(window.opener);
+          window.opener.postMessage = function(data, targetOrigin, transfer) {
+            forward(data);
+            try { return real(data, targetOrigin, transfer); } catch (e) {}
+          };
+          patched = true;
+        }
+      } catch (e) {}
+      if (!patched) {
+        try {
+          Object.defineProperty(window, 'opener', {
+            configurable: true,
+            get: function() { return fake; },
+            set: function() {}
+          });
+        } catch (e) {
+          try { window.opener = fake; } catch (e2) {}
+        }
+      }
+      try {
+        var realClose = window.close.bind(window);
+        window.close = function() {
+          closeNative();
+          try { return realClose(); } catch (e) {}
+        };
+      } catch (e) {}
+    })();
+    """
 
     /// X hands a WebView a custom scheme instead of a page. Rewrite to https
     /// so the session stays in NoScroll instead of cancelling into white.
@@ -160,5 +303,47 @@ public enum PopupPolicy {
         let right = b.lowercased()
         if left.isEmpty || right.isEmpty { return false }
         return left == right
+    }
+
+    private static func jsonString(_ value: Any) -> String? {
+        if let text = value as? String {
+            return jsonFragment(text)
+        }
+        if let flag = value as? Bool {
+            return flag ? "true" : "false"
+        }
+        if value is NSNull { return "null" }
+        if JSONSerialization.isValidJSONObject(value) {
+            guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+                  let text = String(data: data, encoding: .utf8) else { return nil }
+            return text
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: [value], options: [.sortedKeys]),
+           let array = String(data: data, encoding: .utf8),
+           array.count >= 2 {
+            return String(array.dropFirst().dropLast())
+        }
+        return nil
+    }
+
+    private static func jsonFragment(_ text: String) -> String {
+        var out = "\""
+        for scalar in text.unicodeScalars {
+            switch scalar {
+            case "\"": out += "\\\""
+            case "\\": out += "\\\\"
+            case "\n": out += "\\n"
+            case "\r": out += "\\r"
+            case "\t": out += "\\t"
+            default:
+                if scalar.value < 0x20 {
+                    out += String(format: "\\u%04x", scalar.value)
+                } else {
+                    out.unicodeScalars.append(scalar)
+                }
+            }
+        }
+        out += "\""
+        return out
     }
 }

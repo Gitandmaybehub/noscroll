@@ -29,6 +29,10 @@ final class WrappedWebViewController: UIViewController {
     private var popupLeftBlank: [ObjectIdentifier: Bool] = [:]
     /// One-shot: `/` → `/home` must not bounce if X then redirects back to `/`.
     private var didRecoverBlankXRoot = false
+    /// Google finished in the child. Parent is often still `/i/flow/login`.
+    private var googleAuthJustFinished = false
+    /// Cancels a queued Home load if a later SSO event supersedes it.
+    private var pendingHomeLoadGeneration = 0
 
     init(session: WebSession,
          startURL: URL,
@@ -187,7 +191,7 @@ final class WrappedWebViewController: UIViewController {
         if let state = restorationState ?? UserDefaults.standard.data(forKey: stateKey) {
             webView.interactionState = state
             if let item = webView.backForwardList.currentItem,
-               ["http", "https"].contains(item.url.scheme?.lowercased() ?? ""),
+               PopupPolicy.shouldRestoreSavedURL(item.url, serviceID: session.service),
                // Discard Snapchat's old mobile "use your computer" landing page.
                !(session.service == "snapchat"
                  && ["www.snapchat.com", "snapchat.com"].contains(item.url.host ?? "")
@@ -202,7 +206,8 @@ final class WrappedWebViewController: UIViewController {
     private var stateKey: String { "noscroll.state.\(session.id.uuidString)" }
 
     @objc private func saveState() {
-        guard webView.backForwardList.currentItem != nil else { return }
+        guard let item = webView.backForwardList.currentItem,
+              PopupPolicy.shouldRestoreSavedURL(item.url, serviceID: session.service) else { return }
         if let state = webView.interactionState as? Data {
             restorationState = state
             UserDefaults.standard.set(state, forKey: stateKey)
@@ -251,10 +256,19 @@ extension WrappedWebViewController: WKNavigationDelegate {
         decisionHandler(.allow)
     }
 
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        if isPopup(webView) {
+            // Second chance if the document-start script missed this hop.
+            webView.evaluateJavaScript(PopupPolicy.openerShimJavaScript, completionHandler: nil)
+            scheduleDismissIfGoogleFinished(webView)
+        }
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if webView === self.webView { saveState() }
         recoverIfParentStuckOnWhite(webView)
         dismissPopupIfReturnedToBlank(webView)
+        dismissPopupIfLandedOnX(webView)
     }
 
     /// A crashed WebView must recover, not sit blank.
@@ -326,6 +340,7 @@ extension WrappedWebViewController {
     /// a cross-site hop; the parent-must-not-move rule still holds).
     private func presentPopup(configuration: WKWebViewConfiguration,
                               from parent: WKWebView) -> WKWebView {
+        installOpenerBridge(on: configuration)
         let popup = WKWebView(frame: .zero, configuration: configuration)
         popup.navigationDelegate = self
         popup.uiDelegate = self
@@ -372,6 +387,7 @@ extension WrappedWebViewController {
     private func dismissPopup(_ popup: WKWebView) {
         guard let idx = popupWebViews.firstIndex(where: { $0 === popup }) else { return }
         popup.stopLoading()
+        popup.configuration.userContentController.removeScriptMessageHandler(forName: "noscrollOpener")
         popupChrome[idx].removeFromSuperview()
         popupWebViews.remove(at: idx)
         popupChrome.remove(at: idx)
@@ -386,14 +402,36 @@ extension WrappedWebViewController {
     /// and a failed one lands on X's own sign-in — never a blank page.
     private func recoverXAfterSSOIfNeeded() {
         guard session.service == "x" else { return }
-        guard PopupPolicy.shouldLoadXHome(afterClosingPopup: webView.url) else { return }
+        guard PopupPolicy.shouldLoadXHome(afterClosingPopup: webView.url,
+                                          googleAuthJustFinished: googleAuthJustFinished) else { return }
+        if googleAuthJustFinished {
+            // Give X's message handler a beat to create the session before
+            // we replace the login document.
+            pendingHomeLoadGeneration += 1
+            let generation = pendingHomeLoadGeneration
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self, self.pendingHomeLoadGeneration == generation else { return }
+                guard PopupPolicy.shouldLoadXHome(afterClosingPopup: self.webView.url,
+                                                  googleAuthJustFinished: true) else { return }
+                self.googleAuthJustFinished = false
+                self.webView.load(URLRequest(url: PopupPolicy.xHomeURL))
+            }
+            return
+        }
         webView.load(URLRequest(url: PopupPolicy.xHomeURL))
     }
 
     private func recoverIfParentStuckOnWhite(_ webView: WKWebView) {
         guard session.service == "x", webView === self.webView, let url = webView.url else { return }
         if PopupPolicy.isGoogleAuthCompletion(url) {
-            webView.load(URLRequest(url: PopupPolicy.xHomeURL))
+            // A redirect-mode hop can finish approval and then go to x.com.
+            // Wait before replacing the document so we do not cancel that.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                guard let self, webView === self.webView,
+                      let now = webView.url,
+                      PopupPolicy.isGoogleAuthCompletion(now) else { return }
+                webView.load(URLRequest(url: PopupPolicy.xHomeURL))
+            }
             return
         }
         if PopupPolicy.isBlankXRoot(url) {
@@ -404,6 +442,53 @@ extension WrappedWebViewController {
             return
         }
         didRecoverBlankXRoot = false
+    }
+
+    private func installOpenerBridge(on configuration: WKWebViewConfiguration) {
+        let ucc = configuration.userContentController
+        ucc.add(OpenerBridgeHandler(owner: self), name: "noscrollOpener")
+        ucc.addUserScript(WKUserScript(source: PopupPolicy.openerShimJavaScript,
+                                      injectionTime: .atDocumentStart,
+                                      forMainFrameOnly: false))
+    }
+
+    func handleOpenerBridge(_ message: WKScriptMessage) {
+        guard let parsed = PopupPolicy.parseOpenerBridgeMessage(message.body) else { return }
+        googleAuthJustFinished = true
+        let popup = message.webView
+        if !parsed.isClose, let dataJSON = parsed.dataJSON {
+            let origin = parsed.origin.isEmpty ? "https://accounts.google.com" : parsed.origin
+            let script = PopupPolicy.parentMessageEventScript(dataJSON: dataJSON, origin: origin)
+            webView.evaluateJavaScript(script) { [weak self] _, _ in
+                guard let self, let popup, self.isPopup(popup) else { return }
+                self.dismissPopup(popup)
+            }
+            return
+        }
+        if let popup, isPopup(popup) {
+            dismissPopup(popup)
+        }
+    }
+
+    /// OAuth finished inside the child and landed on X. Cookies are already
+    /// in the shared store. Do not do this for Google's blank completion
+    /// page — that document still needs a moment to `postMessage`.
+    private func dismissPopupIfLandedOnX(_ webView: WKWebView) {
+        guard isPopup(webView), let url = webView.url else { return }
+        guard PopupPolicy.isXHost(url.host), PopupPolicy.shouldDismissPopup(url) else { return }
+        googleAuthJustFinished = true
+        dismissPopup(webView)
+    }
+
+    /// GSI's blank completion page may never fire `window.close`. Give the
+    /// shim a moment to forward the credential, then drop the white overlay.
+    private func scheduleDismissIfGoogleFinished(_ webView: WKWebView) {
+        guard isPopup(webView), PopupPolicy.shouldDismissPopup(webView.url) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self, weak webView] in
+            guard let self, let webView, self.isPopup(webView) else { return }
+            self.googleAuthJustFinished = true
+            self.dismissPopup(webView)
+        }
     }
 
     private func dismissPopupIfReturnedToBlank(_ webView: WKWebView) {
@@ -428,6 +513,16 @@ enum BridgeMessage {
     case authSurface(active: Bool)
     case breakage(ruleId: String, detail: String)
     case ready(bundleVersion: Int, service: String)
+}
+
+private final class OpenerBridgeHandler: NSObject, WKScriptMessageHandler {
+    weak var owner: WrappedWebViewController?
+    init(owner: WrappedWebViewController) { self.owner = owner }
+
+    func userContentController(_ controller: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        owner?.handleOpenerBridge(message)
+    }
 }
 
 private final class BridgeHandler: NSObject, WKScriptMessageHandler {

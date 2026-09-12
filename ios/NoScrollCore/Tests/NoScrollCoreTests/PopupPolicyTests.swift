@@ -105,10 +105,105 @@ final class PopupPolicyTests: XCTestCase {
             url("https://accounts.google.com/gsi/transform")))
         XCTAssertTrue(PopupPolicy.isGoogleAuthCompletion(
             url("https://accounts.google.com/o/oauth2/postmessagerelay")))
+        XCTAssertTrue(PopupPolicy.isGoogleAuthCompletion(
+            url("https://accounts.google.com/gsi/issue")))
+        XCTAssertTrue(PopupPolicy.isGoogleAuthCompletion(
+            url("https://accounts.google.com/gsi/transform?client_id=abc")))
         XCTAssertFalse(PopupPolicy.isGoogleAuthCompletion(
             url("https://accounts.google.com/gsi/select?client_id=abc")))
         XCTAssertFalse(PopupPolicy.isGoogleAuthCompletion(
             url("https://accounts.google.com/o/oauth2/v2/auth?client_id=abc")))
+    }
+
+    func testDismissPopupOnGoogleCompletionNotOnChooser() {
+        // The child stays on /gsi/transform (blank). That is the white screen
+        // the user still sees after Google says sign-in succeeded.
+        XCTAssertTrue(PopupPolicy.shouldDismissPopup(
+            url("https://accounts.google.com/gsi/transform")))
+        XCTAssertTrue(PopupPolicy.shouldDismissPopup(
+            url("https://accounts.google.com/gsi/issue")))
+        XCTAssertTrue(PopupPolicy.shouldDismissPopup(
+            url("https://accounts.google.com/o/oauth2/approval")))
+        XCTAssertTrue(PopupPolicy.shouldDismissPopup(
+            url("https://x.com/home")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(
+            url("https://accounts.google.com/gsi/select?client_id=abc")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(
+            url("https://accounts.google.com/o/oauth2/v2/auth?client_id=abc")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(
+            url("https://x.com/i/flow/login")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(
+            url("https://x.com/i/flow/single_sign_on")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(url("about:blank")))
+        XCTAssertFalse(PopupPolicy.shouldDismissPopup(nil))
+    }
+
+    func testLoadHomeAfterGoogleEvenIfParentStillOnLogin() {
+        // After GSI, the parent is still /i/flow/login. iOS 17.5+ often
+        // nulled window.opener, so X never left that page. Staying there
+        // is the other white-screen path.
+        XCTAssertTrue(PopupPolicy.shouldLoadXHome(
+            afterClosingPopup: url("https://x.com/i/flow/login"),
+            googleAuthJustFinished: true))
+        XCTAssertTrue(PopupPolicy.shouldLoadXHome(
+            afterClosingPopup: url("https://x.com/"),
+            googleAuthJustFinished: true))
+        XCTAssertTrue(PopupPolicy.shouldLoadXHome(
+            afterClosingPopup: nil,
+            googleAuthJustFinished: true))
+        XCTAssertFalse(PopupPolicy.shouldLoadXHome(
+            afterClosingPopup: url("https://x.com/home"),
+            googleAuthJustFinished: true),
+                       "do not reload Home if X already took the user there")
+        XCTAssertFalse(PopupPolicy.shouldLoadXHome(
+            afterClosingPopup: url("https://x.com/i/flow/login"),
+            googleAuthJustFinished: false))
+    }
+
+    func testDoNotRestoreGoogleOrBlankXRoot() {
+        XCTAssertFalse(PopupPolicy.shouldRestoreSavedURL(
+            url("https://accounts.google.com/gsi/transform"), serviceID: "x"))
+        XCTAssertFalse(PopupPolicy.shouldRestoreSavedURL(
+            url("https://x.com/"), serviceID: "x"))
+        XCTAssertFalse(PopupPolicy.shouldRestoreSavedURL(
+            url("https://accounts.google.com/o/oauth2/approval"), serviceID: "x"))
+        XCTAssertTrue(PopupPolicy.shouldRestoreSavedURL(
+            url("https://x.com/home"), serviceID: "x"))
+        XCTAssertTrue(PopupPolicy.shouldRestoreSavedURL(
+            url("https://www.instagram.com/"), serviceID: "instagram"))
+    }
+
+    func testParseOpenerBridgeMessage() {
+        let body: [String: Any] = [
+            "type": "postMessage",
+            "origin": "https://accounts.google.com",
+            "data": ["credential": "abc.def", "select_by": "btn"],
+        ]
+        let parsed = PopupPolicy.parseOpenerBridgeMessage(body)
+        XCTAssertEqual(parsed?.isClose, false)
+        XCTAssertEqual(parsed?.origin, "https://accounts.google.com")
+        XCTAssertEqual(parsed?.dataJSON, "{\"credential\":\"abc.def\",\"select_by\":\"btn\"}")
+
+        let close = PopupPolicy.parseOpenerBridgeMessage(["type": "close", "origin": "https://accounts.google.com"])
+        XCTAssertEqual(close?.isClose, true)
+
+        XCTAssertNil(PopupPolicy.parseOpenerBridgeMessage("nope"))
+    }
+
+    func testParentMessageEventScriptUsesGoogleOrigin() {
+        let script = PopupPolicy.parentMessageEventScript(
+            dataJSON: "{\"credential\":\"tok\"}",
+            origin: "https://accounts.google.com")
+        XCTAssertTrue(script.contains("https://accounts.google.com"))
+        XCTAssertTrue(script.contains("{\"credential\":\"tok\"}"))
+        XCTAssertTrue(script.contains("MessageEvent"))
+    }
+
+    func testOpenerShimOnlyRunsOnGoogleOrBlank() {
+        XCTAssertTrue(PopupPolicy.openerShimJavaScript.contains("noscrollOpener"))
+        XCTAssertTrue(PopupPolicy.openerShimJavaScript.contains("accounts.google.com"))
+        XCTAssertTrue(PopupPolicy.openerShimJavaScript.contains("about:blank"))
+        XCTAssertTrue(PopupPolicy.openerShimJavaScript.contains("postMessage"))
     }
 
     func testXSafariSchemeRewritesToHTTPS() {
