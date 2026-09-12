@@ -46,6 +46,7 @@ jobs:
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           cd ios
           xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+            NoScrollCore/Sources/NoScrollCore/PopupPolicy.swift \
             NoScroll/Core/*.swift NoScroll/Web/*.swift
           for f in NoScroll/Shield/*.swift ShieldConfiguration/*.swift \
                    ShieldAction/*.swift DeviceActivityMonitor/*.swift; do
