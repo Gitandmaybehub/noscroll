@@ -49,6 +49,10 @@ def due(deadline, now):
     return deadline - now <= timedelta(hours=72)
 
 
+def fresh_enough(item, previous, now):
+    return expiry(item) > previous and expiry(item) >= now + timedelta(days=6)
+
+
 def validate(profiles, config, now, previous=None):
     if len(profiles) != 2:
         raise ValueError("app and widget profiles are both required")
@@ -61,7 +65,7 @@ def validate(profiles, config, now, previous=None):
             raise ValueError("unexpected app identifier")
         if config["udid"] not in item.get("ProvisionedDevices", []):
             raise ValueError("profile does not include this iPhone")
-        if previous is not None and (expiry(item) <= previous or expiry(item) < now + timedelta(days=6)):
+        if previous is not None and not fresh_enough(item, previous, now):
             raise ValueError("Apple did not issue a fresh profile; installed app kept")
     return min(expiry(p) for p in profiles)
 
@@ -139,6 +143,9 @@ def check(force):
         for cached in Path(config["profile_cache"]).glob("*.mobileprovision"):
             data = profile(cached)
             if data.get("Entitlements", {}).get("application-identifier") in expected:
+                # Reuse fresh profiles issued by an earlier failed build.
+                if fresh_enough(data, deadline, now):
+                    continue
                 backup = archive / cached.name
                 cached.rename(backup)
                 moved.append((cached, backup))
@@ -181,6 +188,9 @@ def self_test():
               "Entitlements": {"application-identifier": "TEAM." + name}}
              for name in ["test.app", "test.app.widget"]]
     assert validate(items, config, now, now + timedelta(days=3)) == now + timedelta(days=7)
+    assert fresh_enough(items[0], now + timedelta(days=3), now)
+    assert not fresh_enough(items[0], now + timedelta(days=7), now)
+    assert not fresh_enough(dict(items[0], ExpirationDate=now + timedelta(days=5)), now, now)
     for mutate in [lambda x: x.pop(), lambda x: x[0].update(TeamIdentifier=["WRONG"]),
                    lambda x: x[1].update(ExpirationDate=now + timedelta(days=3))]:
         import copy
