@@ -217,7 +217,7 @@ Honestly, because a feature list that overpromises is the thing this project is 
 - **No notifications.** WKWebView cannot receive web push, and shielding an app suppresses that
   app's own notifications too. This is a scoped-out non-goal, not a bug.
 - **Screen Time is off by default even on a device.** The Family Controls entitlement is opt-in
-  (`NOSCROLL_ENTITLEMENTS`) because wiring it unconditionally breaks signing for any account
+  (`CODE_SIGN_ENTITLEMENTS`) because wiring it unconditionally breaks signing for any account
   without Apple's approval. Without it, "Grant access" explains why rather than failing with
   Apple's `Couldn't communicate with a helper application`.
 - **Screen Time does not work in the iOS Simulator at all.** The frameworks are non-functional

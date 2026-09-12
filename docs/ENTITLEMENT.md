@@ -40,9 +40,10 @@ Once Apple has approved it for your App ID:
 ```bash
 # command line
 xcodebuild -project ios/NoScroll.xcodeproj -scheme NoScroll \
-  NOSCROLL_ENTITLEMENTS=NoScroll/NoScroll.entitlements
+  CODE_SIGN_ENTITLEMENTS=NoScroll/NoScroll.entitlements
 
-# or in Xcode: set the NOSCROLL_ENTITLEMENTS build setting on the NoScroll target
+# or in Xcode: set CODE_SIGN_ENTITLEMENTS on the NoScroll target to
+# NoScroll/NoScroll.entitlements
 ```
 
 Everything else in the app works without it.
