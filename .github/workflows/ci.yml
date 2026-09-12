@@ -52,7 +52,8 @@ jobs:
             NoScroll/App/*.swift NoScroll/Core/*.swift NoScroll/Web/*.swift \
             NoScroll/Design/*.swift NoScroll/Home/*.swift \
             NoScroll/Onboarding/*.swift
-          xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+          xcrun swiftc -typecheck -parse-as-library \
+            -target arm64-apple-ios17.0 -sdk "$SDK" \
             NoScrollWidget/*.swift
           # Shield sources import NoScrollCore and each other. File-by-file
           # typecheck cannot see the module or sibling types.
