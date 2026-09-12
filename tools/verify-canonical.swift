@@ -23,10 +23,12 @@ func canonicalize(_ raw: Data) throws -> Data {
 }
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let keyURL = root.appendingPathComponent("keys/rules-signing.pub.raw")
-
-guard let keyData = try? Data(contentsOf: keyURL) else {
-    print("missing keys/rules-signing.pub.raw — run: node tools/sign-bundle.mjs keygen")
+let keyCandidates = [
+    root.appendingPathComponent("keys/rules-signing.pub.raw"),
+    root.appendingPathComponent("ios/NoScroll/Resources/rules-signing.pub.raw"),
+]
+guard let keyData = keyCandidates.compactMap({ try? Data(contentsOf: $0) }).first else {
+    print("missing public key — run: node tools/sign-bundle.mjs keygen")
     exit(1)
 }
 let publicKey = try Curve25519.Signing.PublicKey(rawRepresentation: keyData)
