@@ -338,7 +338,7 @@ extension WrappedWebViewController {
         chrome.translatesAutoresizingMaskIntoConstraints = false
 
         let done = UIButton(type: .system)
-        done.setTitle("Done", for: .normal)
+        done.setTitle("Close", for: .normal)
         done.accessibilityLabel = "Close sign-in window"
         done.addTarget(self, action: #selector(closeTopPopup), for: .touchUpInside)
         done.translatesAutoresizingMaskIntoConstraints = false
