@@ -45,9 +45,38 @@ jobs:
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           cd ios
+          # Same file set as the NoScroll app target. Core+Web alone missed
+          # SwiftUI compile errors that Xcode hits on device.
           xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
-            NoScroll/Core/*.swift NoScroll/Web/*.swift
-          for f in NoScroll/Shield/*.swift ShieldConfiguration/*.swift \
-                   ShieldAction/*.swift DeviceActivityMonitor/*.swift; do
-            xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" "$f"
-          done
+            NoScrollCore/Sources/NoScrollCore/*.swift \
+            NoScroll/App/*.swift NoScroll/Core/*.swift NoScroll/Web/*.swift \
+            NoScroll/Design/*.swift NoScroll/Home/*.swift \
+            NoScroll/Onboarding/*.swift
+          xcrun swiftc -typecheck -parse-as-library \
+            -target arm64-apple-ios17.0 -sdk "$SDK" \
+            NoScrollWidget/*.swift
+          # Shield sources import NoScrollCore and each other. File-by-file
+          # typecheck cannot see the module or sibling types.
+          MODULE_DIR=$(mktemp -d)
+          xcrun swiftc -emit-module -module-name NoScrollCore \
+            -target arm64-apple-ios17.0 -sdk "$SDK" \
+            -parse-as-library \
+            -emit-module-path "$MODULE_DIR/NoScrollCore.swiftmodule" \
+            NoScrollCore/Sources/NoScrollCore/*.swift
+          xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+            -I "$MODULE_DIR" NoScroll/Shield/*.swift
+          xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+            ShieldConfiguration/*.swift
+          xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+            ShieldAction/*.swift
+          xcrun swiftc -typecheck -target arm64-apple-ios17.0 -sdk "$SDK" \
+            DeviceActivityMonitor/*.swift
+      - name: Build the iOS app without signing
+        run: |
+          cd ios
+          xcodebuild -list -project NoScroll.xcodeproj
+          xcodebuild -project NoScroll.xcodeproj -scheme NoScroll \
+            -configuration Debug -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=- \
+            build

@@ -33,6 +33,24 @@ const KEY_DIR = join(ROOT, 'keys');
 const PRIV = join(KEY_DIR, 'rules-signing.pem');
 const PUB = join(KEY_DIR, 'rules-signing.pub.pem');
 const PUB_RAW = join(KEY_DIR, 'rules-signing.pub.raw');
+/** Shipped in the app. CI has no keys/ directory; this is enough to verify. */
+const SHIPPED_PUB_RAW = join(ROOT, 'ios/NoScroll/Resources/rules-signing.pub.raw');
+
+/** Ed25519 SubjectPublicKeyInfo prefix (RFC 8410) + 32-byte raw key. */
+function publicKeyFromRaw(raw) {
+  if (raw.length !== 32) {
+    throw new Error(`ed25519 raw public key must be 32 bytes, got ${raw.length}`);
+  }
+  const der = Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), raw]);
+  return createPublicKey({ key: der, format: 'der', type: 'spki' });
+}
+
+function loadPublicKey() {
+  if (existsSync(PUB)) return createPublicKey(readFileSync(PUB));
+  if (existsSync(PUB_RAW)) return publicKeyFromRaw(readFileSync(PUB_RAW));
+  if (existsSync(SHIPPED_PUB_RAW)) return publicKeyFromRaw(readFileSync(SHIPPED_PUB_RAW));
+  throw new Error('no public key: run `node tools/sign-bundle.mjs keygen` or ship ios/NoScroll/Resources/rules-signing.pub.raw');
+}
 
 /** Sort object keys recursively. Arrays keep their order — order is meaningful. */
 function sortKeys(value) {
@@ -84,7 +102,7 @@ function signFile(path) {
 }
 
 function verifyFile(path) {
-  const key = createPublicKey(readFileSync(PUB));
+  const key = loadPublicKey();
   const raw = readFileSync(path, 'utf8');
   const obj = JSON.parse(raw);
   if (!obj.signature) {

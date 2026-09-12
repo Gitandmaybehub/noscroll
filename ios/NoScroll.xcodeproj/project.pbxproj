@@ -26,7 +26,9 @@
 		01B48439A20256793F4B65E7 /* RuleBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BD89AE0AFB93182037786A /* RuleBundle.swift */; };
 		49A807443D5252C9D186CD14 /* WebSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7F0F00CF30E18AB6827BC3 /* WebSession.swift */; };
 		A206A501EE4E7DD87D1C6593 /* WrappedWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80B5AA7285EE89404D034D8 /* WrappedWebViewController.swift */; };
+		3D9F2A81C6B048E1957D4E33 /* PopupPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E1C4A092F54D6E8A3B1C20 /* PopupPolicy.swift */; };
 		8BBA0F12CFE98E6B7CEE26F4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 847708244D2F2364D2D98223 /* Assets.xcassets */; };
+		8D5F02B1C3E4506F9B2D1E33 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7C4E91A0B2D34F5E8A1C0D22 /* PrivacyInfo.xcprivacy */; };
 		0020A065EE1971D8D94E8A44 /* noscroll.js in Resources */ = {isa = PBXBuildFile; fileRef = D2E4B2A875DB71820FEEF62C /* noscroll.js */; };
 		73A4DAFBEDD5F44B73C51FBA /* rules-signing.pub.raw in Resources */ = {isa = PBXBuildFile; fileRef = F448BA98B41A3C469FBAA0C0 /* rules-signing.pub.raw */; };
 		2F54E958873733761E2D57DE /* facebook.json in Resources */ = {isa = PBXBuildFile; fileRef = 6DD636EB38F7FB6347CF8CEC /* facebook.json */; };
@@ -61,7 +63,9 @@
 		54BD89AE0AFB93182037786A /* RuleBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RuleBundle.swift"; path = "NoScroll/Core/RuleBundle.swift"; sourceTree = "<group>"; };
 		6F7F0F00CF30E18AB6827BC3 /* WebSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "WebSession.swift"; path = "NoScroll/Core/WebSession.swift"; sourceTree = "<group>"; };
 		F80B5AA7285EE89404D034D8 /* WrappedWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "WrappedWebViewController.swift"; path = "NoScroll/Web/WrappedWebViewController.swift"; sourceTree = "<group>"; };
+		B7E1C4A092F54D6E8A3B1C20 /* PopupPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PopupPolicy.swift"; path = "NoScrollCore/Sources/NoScrollCore/PopupPolicy.swift"; sourceTree = "<group>"; };
 		847708244D2F2364D2D98223 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Assets.xcassets"; path = "NoScroll/Assets.xcassets"; sourceTree = "<group>"; };
+		7C4E91A0B2D34F5E8A1C0D22 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = "PrivacyInfo.xcprivacy"; path = "NoScroll/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		D2E4B2A875DB71820FEEF62C /* noscroll.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "noscroll.js"; path = "NoScroll/Resources/noscroll.js"; sourceTree = "<group>"; };
 		F448BA98B41A3C469FBAA0C0 /* rules-signing.pub.raw */ = {isa = PBXFileReference; lastKnownFileType = file; name = "rules-signing.pub.raw"; path = "NoScroll/Resources/rules-signing.pub.raw"; sourceTree = "<group>"; };
 		6DD636EB38F7FB6347CF8CEC /* facebook.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "facebook.json"; path = "NoScroll/Resources/Rules/facebook.json"; sourceTree = "<group>"; };
@@ -127,6 +131,7 @@
 				9F0633E77EC760EF2A904903 /* LifeInWeeks.swift */,
 				F289B64C92194643788A6FA4 /* SVGPath.swift */,
 				AF0730769F06E849F940D126 /* SleepSchedule.swift */,
+				B7E1C4A092F54D6E8A3B1C20 /* PopupPolicy.swift */,
 				54BD89AE0AFB93182037786A /* RuleBundle.swift */,
 				6F7F0F00CF30E18AB6827BC3 /* WebSession.swift */,
 				F80B5AA7285EE89404D034D8 /* WrappedWebViewController.swift */,
@@ -138,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				847708244D2F2364D2D98223 /* Assets.xcassets */,
+				7C4E91A0B2D34F5E8A1C0D22 /* PrivacyInfo.xcprivacy */,
 				D2E4B2A875DB71820FEEF62C /* noscroll.js */,
 				F448BA98B41A3C469FBAA0C0 /* rules-signing.pub.raw */,
 				6DD636EB38F7FB6347CF8CEC /* facebook.json */,
@@ -263,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8BBA0F12CFE98E6B7CEE26F4 /* Assets.xcassets in Resources */,
+				8D5F02B1C3E4506F9B2D1E33 /* PrivacyInfo.xcprivacy in Resources */,
 				0020A065EE1971D8D94E8A44 /* noscroll.js in Resources */,
 				73A4DAFBEDD5F44B73C51FBA /* rules-signing.pub.raw in Resources */,
 				2F54E958873733761E2D57DE /* facebook.json in Resources */,
@@ -299,6 +306,7 @@
 				FDD33EE84FB43E2CFCA75F3A /* LifeInWeeks.swift in Sources */,
 				024E40666AED54B036AF4364 /* SVGPath.swift in Sources */,
 				79493D91E790ABA69B173F63 /* SleepSchedule.swift in Sources */,
+				3D9F2A81C6B048E1957D4E33 /* PopupPolicy.swift in Sources */,
 				01B48439A20256793F4B65E7 /* RuleBundle.swift in Sources */,
 				49A807443D5252C9D186CD14 /* WebSession.swift in Sources */,
 				A206A501EE4E7DD87D1C6593 /* WrappedWebViewController.swift in Sources */,
@@ -338,14 +346,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
-				NOSCROLL_ENTITLEMENTS = "";
-				CODE_SIGN_ENTITLEMENTS = "$(NOSCROLL_ENTITLEMENTS)";
 				INFOPLIST_FILE = NoScroll/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "NoScroll CG";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -354,15 +364,18 @@
 		9BDCCBA29C3D6E6125BB6682 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NoScrollWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NoScroll;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -389,14 +402,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
-				NOSCROLL_ENTITLEMENTS = "";
-				CODE_SIGN_ENTITLEMENTS = "$(NOSCROLL_ENTITLEMENTS)";
 				INFOPLIST_FILE = NoScroll/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "NoScroll CG";
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -405,15 +420,18 @@
 		77748907EE6232549BFF1D1C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NoScrollWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = NoScroll;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.christiangiangrande.noscroll.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
